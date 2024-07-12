@@ -1,0 +1,12 @@
+CONTEXT:
+{context}
+
+QUESTION:
+{question}
+
+INSTRUCTIONS:
+Answer the user's QUESTION using the CONTEXT text above.
+Keep your answer grounded in the facts of the CONTEXT.
+If the CONTEXT doesn't contain the facts to answer the QUESTION return "I don't know".
+
+ANSWER:

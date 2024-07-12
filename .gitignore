@@ -1,0 +1,11 @@
+/docs
+/node_modules
+/.venv
+
+/chroma
+chroma.log
+
+/out
+
+.env
+.DS_Store
