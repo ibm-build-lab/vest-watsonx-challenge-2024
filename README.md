@@ -1,6 +1,6 @@
 # VEST watsonx challenge 2024
 
-Built using Node + ChromaDB + +LangChain + watsonx.ai
+Built using Node + ChromaDB + LangChain + watsonx.ai
 
 ## Getting started
 
@@ -22,7 +22,7 @@ Once those are set you can begin by installing the dependencies needed to run th
 npm ci
 ```
 
-> This will also run the npm `preinstall` script which will install the ChromaDB dependency from Python. Make sure you have Python installed.
+> This will also run the npm `preinstall` script which will install the ChromaDB dependency from Python. Make sure you have Python installed!
 
 This script uses a ChromaDB connector by default to store embeddings. Because of this an instance of the database must be running locally before running the script itself. To start the local ChromaDB server run:
 
