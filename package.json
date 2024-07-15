@@ -11,7 +11,7 @@
   "types": "out/index.d.ts",
   "engines": {
     "npm": ">=8.0.0",
-    "node": ">=18.13.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "preinstall": "python -m pip install chromadb",
