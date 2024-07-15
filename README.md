@@ -40,11 +40,13 @@ Each time the script is ran the contents of the ChromaDB instance is reset.
 
 > Hence the need for the `ALLOW_RESET` environment variable.
 
+### Document sourcing
+
+By default, documents sourced for embedding generation come from `./docs/.*md` (relative to project root) and are found via `fast-glob`. Documents must be located here in order to be sourced and inserted into the database.
+
 ### Embedding generation
 
 This script will chunk the Markdown input via LangChain and then run them through the embeddings generation API available via watsonx.ai. The resulting vectors are then inserted into the ChromaDB instance so they can be search later.
-
-
 
 
 
