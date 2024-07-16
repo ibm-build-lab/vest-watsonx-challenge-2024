@@ -14,7 +14,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "preinstall": "python -m pip install chromadb",
+    "preinstall": "python -m pip install -r requirements.txt",
     "chroma": "chroma run --path ./chroma",
     "start": "tsx --env-file=.env ./src/bin.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
