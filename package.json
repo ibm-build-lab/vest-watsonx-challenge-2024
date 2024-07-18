@@ -1,7 +1,7 @@
 {
-  "name": "watsonx-translator-cli",
+  "name": "vest-watsonx-challenge-2024",
   "version": "1.0.0",
-  "description": "CLI to localize Markdown content using IBM watsonx.ai",
+  "description": "VEST squad watsonx challenge code",
   "type": "module",
   "files": [
     "out/**/*"

@@ -22,7 +22,7 @@ await CHROMA.reset();
 const collection = await CHROMA.createCollection({ name: 'test-from-js' });
 
 // iterate over documents
-const files = fg.globSync(['./docs/*.md']);
+const files = fg.globSync(['./docs/**/*.{md,mdx}']);
 await Promise.all(
   files.map(async (filePath: string) => {
     // parse raw text
