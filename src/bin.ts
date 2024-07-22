@@ -6,6 +6,7 @@ import fg from 'fast-glob';
 import fs from 'fs';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import readline from 'readline/promises';
+import chalk from 'chalk';
 
 const CHROMA = new ChromaClient();
 const PROMPT = fs.readFileSync('./src/prompt.txt').toString();
@@ -15,38 +16,60 @@ const WX = WatsonXAI.newInstance({
 });
 const TEXT_SPLITTER = RecursiveCharacterTextSplitter.fromLanguage('markdown', {
   chunkSize: 500,
-  chunkOverlap: 0
+  chunkOverlap: 25
 });
 
 await CHROMA.reset();
 const collection = await CHROMA.createCollection({ name: 'test-from-js' });
 
-// iterate over documents
-const files = fg.globSync(['./docs/**/*.{md,mdx}']);
-await Promise.all(
-  files.map(async (filePath: string) => {
-    // parse raw text
-    const rawFile = fs.readFileSync(filePath).toString();
+/**
+ * Generate embeddings for given text
+ *
+ * @param input
+ * @returns embeddings
+ */
+async function createEmbeddings(input: string | string[]) {
+  const embeddings = await WX.textEmbeddings({
+    parameters: {},
+    projectId: process.env.WATSONX_AI_PROJ_ID,
+    inputs: Array.isArray(input) ? input : [input],
+    modelId: 'ibm/slate-125m-english-rtrvr'
+  });
 
-    // split into chunks
-    const splitDocs = await TEXT_SPLITTER.createDocuments([rawFile]);
+  return embeddings.result.results.map((e) => e.embedding);
+}
 
-    // calculate embeddings for chunks
-    const embeddings = await WX.textEmbeddings({
-      parameters: {},
-      projectId: process.env.WATSONX_AI_PROJ_ID,
-      inputs: splitDocs.map((s) => s.pageContent),
-      modelId: 'ibm/slate-125m-english-rtrvr'
-    });
+/**
+ * Ingest docs into chromadb
+ *
+ * @param glob
+ */
+async function ingestDocuments(glob: string) {
+  // iterate over documents
+  const files = fg.globSync([glob]);
+  await Promise.all(
+    files.map(async (filePath: string) => {
+      // parse raw text
+      const rawFile = fs.readFileSync(filePath).toString();
 
-    // insert embeddings into db
-    await collection.add({
-      ids: [...new Array(splitDocs.length)].map((_, idx) => `${filePath}_${idx}`),
-      embeddings: embeddings.result.results.map((e) => e.embedding),
-      documents: splitDocs.map((s) => s.pageContent)
-    });
-  })
-);
+      // split into chunks
+      const splitDocs = await TEXT_SPLITTER.createDocuments([rawFile]);
+
+      // calculate embeddings for chunks
+      const embeddings = await createEmbeddings(splitDocs.map((s) => s.pageContent));
+
+      // insert embeddings into db
+      await collection.add({
+        ids: [...new Array(splitDocs.length)].map((_, idx) => `${filePath}_${idx}`),
+        metadatas: [...new Array(splitDocs.length)].map((_) => ({ filePath })),
+        embeddings: embeddings,
+        documents: splitDocs.map((s) => s.pageContent)
+      });
+    })
+  );
+}
+
+await ingestDocuments('./docs/**/*.{md,mdx}');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -55,19 +78,14 @@ const rl = readline.createInterface({
 
 // eslint-disable-next-line no-constant-condition
 while (true) {
-  const queryText = await rl.question(`QUESTION:\n`);
+  const queryText = await rl.question(chalk.blue(`QUESTION:\n`));
 
-  console.log(`Let me check...`);
+  console.log(`\nLet me check...\n`);
 
-  const queryEmbedding = await WX.textEmbeddings({
-    parameters: {},
-    projectId: process.env.WATSONX_AI_PROJ_ID,
-    inputs: [queryText],
-    modelId: 'ibm/slate-125m-english-rtrvr'
-  });
-
+  // generate embeddings for input text and query vector DB
+  const queryEmbedding = await createEmbeddings(queryText);
   const queryData = await collection.query({
-    queryEmbeddings: queryEmbedding.result.results[0].embedding,
+    queryEmbeddings: queryEmbedding,
     queryTexts: [queryText], // Chroma will embed this for you
     nResults: 5
   });
@@ -87,5 +105,14 @@ while (true) {
     projectId: process.env.WATSONX_AI_PROJ_ID
   });
 
-  console.log(`\nANSWER:\n${output.result.results[0].generated_text.trim()}\n`);
+  console.log(chalk.green(`ANSWER:`));
+  console.log(chalk.italic(`${output.result.results[0].generated_text.trim()}\n`));
+
+  console.log('Answer sourced from:');
+  queryData.metadatas.flat().forEach((item) => {
+    if (item === null) return;
+    const { filePath } = item;
+    console.log(filePath);
+  });
+  console.log();
 }
